@@ -47,10 +47,8 @@ You can run the Java application directly using standard Linux scheduling polici
 After building the main Java project (using `mvn package` as described in "Installation Instructions"), run:
 
 ```bash
-java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-java-args]
+java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
-
-(Note: Specific command-line arguments or usage patterns for the Java application itself might be required depending on its entry point and functionality in `LinuxScheduler.java`.)
 
 ### 2. Running with Real-Time Scheduling (using `sched_helper`)
 
