@@ -10,15 +10,16 @@ JAVA_BIN = $(shell which java)
 all: $(LAUNCHER) $(JAR_FILE)
 
 $(LAUNCHER): my_java_launcher.c
-	$(CC) $(CFLAGS) -o $(LAUNCHER) my_java_launcher.c -lcap
+	$(CC) $(CFLAGS) -o $@ $< -lcap
 
 setcap: $(LAUNCHER)
-	sudo setcap cap_sys_nice+ep $(LAUNCHER) 
+	sudo setcap cap_sys_nice+ep $<
 
 $(JAR_FILE): $(JAVA_SRC)
 	mvn package
 
-run: all
+run: all setcap
+	@echo "Running Java application with custom launcher..."
 	./$(LAUNCHER) $(JAVA_BIN) -jar $(JAR_FILE)
 
 clean:
