@@ -42,7 +42,7 @@ This section outlines how to run the Java application.
 
 ### 1. Running with Standard Scheduling
 
-You can run the Java application directly using standard Linux scheduling policies (e.g., `SCHED_OTHER`). This does not require any special privileges or the `help_launcher` utility.
+You can run the Java application directly using standard Linux scheduling policies (e.g., `SCHED_OTHER`). This does not require any special privileges or the `sched_helper` utility.
 
 After building the main Java project (using `mvn package` as described in "Installation Instructions"), run:
 
@@ -52,44 +52,44 @@ java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-jav
 
 (Note: Specific command-line arguments or usage patterns for the Java application itself might be required depending on its entry point and functionality in `LinuxScheduler.java`.)
 
-### 2. Running with Real-Time Scheduling (using `help_launcher`)
+### 2. Running with Real-Time Scheduling (using `sched_helper`)
 
 To use real-time scheduling policies like `SCHED_FIFO` or `SCHED_RR`, the Java process needs `CAP_SYS_NICE` capabilities (see `sched_setscheduler(2)` man page for details). Running a Java JVM directly with such capabilities (e.g., as root) is generally discouraged for security reasons.
 
-This project provides a C helper program (`help_launcher`) to launch the Java application with the necessary capabilities without granting excessive permissions to the entire JVM.
+This project provides a C helper program (`sched_helper`) to launch the Java application with the necessary capabilities without granting excessive permissions to the entire JVM.
 
-Follow these steps to build, configure, and use `help_launcher`:
+Follow these steps to build, configure, and use `sched_helper`:
 
-#### a. Building `help_launcher`
+#### a. Building `sched_helper`
 
-The `help_launcher.c` program needs to be compiled first. The project includes a `Makefile` for this purpose. In the project's root directory, run:
+The `sched_helper.c` program needs to be compiled first. The project includes a `Makefile` for this purpose. In the project's root directory, run:
 
 ```bash
 make
 ```
-This will produce an executable named `help_launcher` in the same directory.
+This will produce an executable named `sched_helper` in the same directory.
 
-#### b. Setting Privileges for `help_launcher`
+#### b. Setting Privileges for `sched_helper`
 
-For `help_launcher` to be able to grant `CAP_SYS_NICE` to the Java process it starts, `help_launcher` itself must possess this capability.
+For `sched_helper` to be able to grant `CAP_SYS_NICE` to the Java process it starts, `sched_helper` itself must possess this capability.
 
-The recommended way to achieve this is to set the capability directly on the `help_launcher` executable:
-
-```bash
-sudo setcap cap_sys_nice+ep help_launcher
-```
-This command should be run in the directory where `help_launcher` was built. You might need to install a package that provides the `setcap` utility (e.g., `libcap2-bin` on Debian/Ubuntu based systems). This method is more secure than alternatives like `setuid` root.
-
-#### c. Using `help_launcher` to Run the Java Application
-
-Once `help_launcher` is built and has the `cap_sys_nice+ep` capability set, you can use it to run your Java application with elevated scheduling privileges:
-
-Make sure `help_launcher` is in your current directory (or accessible via your system's PATH).
+The recommended way to achieve this is to set the capability directly on the `sched_helper` executable:
 
 ```bash
-./help_launcher /usr/bin/java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-other-java-args]
+sudo setcap cap_sys_nice+ep sched_helper
 ```
-*(Important: Replace `/usr/bin/java` with the actual absolute path to your Java executable if it's different on your system. The `help_launcher` program expects the full path to the command it needs to execute, followed by its arguments.)*
+This command should be run in the directory where `sched_helper` was built. You might need to install a package that provides the `setcap` utility (e.g., `libcap2-bin` on Debian/Ubuntu based systems). This method is more secure than alternatives like `setuid` root.
+
+#### c. Using `sched_helper` to Run the Java Application
+
+Once `sched_helper` is built and has the `cap_sys_nice+ep` capability set, you can use it to run your Java application with elevated scheduling privileges:
+
+Make sure `sched_helper` is in your current directory (or accessible via your system's PATH).
+
+```bash
+./sched_helper /usr/bin/java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-other-java-args]
+```
+*(Important: Replace `/usr/bin/java` with the actual absolute path to your Java executable if it's different on your system. The `sched_helper` program expects the full path to the command it needs to execute, followed by its arguments.)*
 
 This command will execute the Java application, and `CustomThread` instances within it should now be able to successfully apply `SCHED_FIFO` or `SCHED_RR` policies if `setLinuxSchedParams()` is called.
 
@@ -112,7 +112,7 @@ This command will execute the Java application, and `CustomThread` instances wit
         *   It calls the native `pthread_self()` function to get the ID of the current native thread.
         *   It prepares a `sched_param` structure (also defined via JNA) containing the desired `priority`.
         *   It then calls the native `pthread_setschedparam(thread_id, policy, sched_param_struct)` function (see `pthread_setschedparam(3)` man page). This system call attempts to change the scheduling policy and priority of the calling thread.
-        *   If `pthread_setschedparam` returns an error (a non-zero value), a `RuntimeException` is thrown, including the native error code obtained via `Native.getLastError()`. This indicates that the scheduling parameters could not be set (e.g., due to insufficient permissions if not using `help_launcher` correctly, or invalid parameters).
+        *   If `pthread_setschedparam` returns an error (a non-zero value), a `RuntimeException` is thrown, including the native error code obtained via `Native.getLastError()`. This indicates that the scheduling parameters could not be set (e.g., due to insufficient permissions if not using `sched_helper` correctly, or invalid parameters).
     *   After attempting to set the scheduling parameters (if they were specified), the `run()` method proceeds to execute the `run()` method of the `Runnable` target that was passed during the `CustomThread`'s construction.
 
 3.  **JNA Interface (`LinuxLibC`)**:
@@ -131,7 +131,7 @@ CustomThread customThread = new CustomThread(myTask);
 customThread.setName("MyFIFOTask");
 
 // Set SCHED_FIFO policy with priority 10
-// This requires CAP_SYS_NICE, typically via help_launcher
+// This requires CAP_SYS_NICE, typically via sched_helper
 customThread.setLinuxSchedParams(CustomThread.SCHED_FIFO, 10);
 
 customThread.start();

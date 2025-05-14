@@ -28,4 +28,4 @@ Thumbs.db
 *.ear
 
 # Ignore Makefile artifacts
-help_launcher
+sched_helper

@@ -2,14 +2,14 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O2
 JAVA_SRC = src/main/java/LinuxScheduler.java src/main/java/CustomThread.java pom.xml
 JAR_FILE = target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar
-LAUNCHER = help_launcher
+LAUNCHER = sched_helper
 JAVA_BIN = $(shell which java)
 
 .PHONY: all setcap run clean
 
 all: $(LAUNCHER) $(JAR_FILE)
 
-$(LAUNCHER): help_launcher.c
+$(LAUNCHER): sched_helper.c
 	$(CC) $(CFLAGS) -o $@ $< -lcap
 
 setcap: $(LAUNCHER)
