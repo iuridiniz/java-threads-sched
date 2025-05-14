@@ -1,0 +1,31 @@
+# Ignore target directory
+/target/
+
+# Ignore Maven wrapper files
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Ignore IDE specific files
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and temp files
+*.log
+*.tmp
+
+# Ignore compiled Java classes
+*.class
+
+# Ignore generated files
+*.jar
+*.war
+*.ear
+
+# Ignore Makefile artifacts
+my_java_launcher
