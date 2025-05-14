@@ -136,17 +136,6 @@ customThread.setLinuxSchedParams(CustomThread.SCHED_FIFO, 10);
 customThread.start();
 ```
 
-## Contributing
-
-Contributions are welcome! Please follow these general guidelines:
-
-1.  Fork the repository.
-2.  Create a new branch for your feature or bug fix.
-3.  Make your changes.
-4.  Ensure your code adheres to the project's coding standards.
-5.  Write or update tests for your changes.
-6.  Submit a pull request with a clear description of your changes.
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details.
