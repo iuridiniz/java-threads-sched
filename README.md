@@ -38,37 +38,60 @@ The project uses the following main dependencies (managed by Maven):
 
 ## Usage Instructions
 
-After building the project, you can run the application using the generated JAR file:
+This section outlines how to run the Java application.
+
+### 1. Running with Standard Scheduling
+
+You can run the Java application directly using standard Linux scheduling policies (e.g., `SCHED_OTHER`). This does not require any special privileges or the `help_launcher` utility.
+
+After building the main Java project (using `mvn package` as described in "Installation Instructions"), run:
 
 ```bash
-java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar
+java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-java-args]
 ```
 
-(Note: Specific command-line arguments or usage patterns might be required depending on the application's entry point and functionality in `LinuxScheduler.java`.)
+(Note: Specific command-line arguments or usage patterns for the Java application itself might be required depending on its entry point and functionality in `LinuxScheduler.java`.)
 
-**Important Note on Privileges:** To use `SCHED_FIFO` and `SCHED_RR` scheduling policies (see `sched_setscheduler(2)` man page for details), the program requires `CAP_SYS_NICE` capabilities (or root privileges). Running a Java JVM as root or with `setuid` can be dangerous. To address this, a C helper program (`help_launcher.c`, compiled to `help_launcher`) is provided. This helper program can be used to launch the Java application with the necessary capabilities without granting excessive permissions to the entire JVM.
+### 2. Running with Real-Time Scheduling (using `help_launcher`)
 
-To enable `help_launcher` to provide these capabilities to the Java process, `help_launcher` itself needs to have elevated privileges. The recommended approach is to grant only the necessary `CAP_SYS_NICE` capability to the `help_launcher` executable:
+To use real-time scheduling policies like `SCHED_FIFO` or `SCHED_RR`, the Java process needs `CAP_SYS_NICE` capabilities (see `sched_setscheduler(2)` man page for details). Running a Java JVM directly with such capabilities (e.g., as root) is generally discouraged for security reasons.
 
-```bash
-sudo setcap cap_sys_nice+ep help_launcher
-```
+This project provides a C helper program (`help_launcher`) to launch the Java application with the necessary capabilities without granting excessive permissions to the entire JVM.
 
-This method limits the potential impact if `help_launcher` is compromised. You might need to install a package that provides the `setcap` utility (e.g., `libcap2-bin` on Debian/Ubuntu).
+Follow these steps to build, configure, and use `help_launcher`:
 
-After setting up `help_launcher` with appropriate privileges, you would typically use it like this (after compiling `help_launcher`):
+#### a. Building `help_launcher`
 
-```bash
-./help_launcher /usr/bin/java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-other-java-args]
-```
-
-The project also includes a C helper program `help_launcher.c`. It can be compiled using the provided `Makefile`:
+The `help_launcher.c` program needs to be compiled first. The project includes a `Makefile` for this purpose. In the project's root directory, run:
 
 ```bash
 make
 ```
+This will produce an executable named `help_launcher` in the same directory.
 
-This will produce an executable named `help_launcher`.
+#### b. Setting Privileges for `help_launcher`
+
+For `help_launcher` to be able to grant `CAP_SYS_NICE` to the Java process it starts, `help_launcher` itself must possess this capability.
+
+The recommended way to achieve this is to set the capability directly on the `help_launcher` executable:
+
+```bash
+sudo setcap cap_sys_nice+ep help_launcher
+```
+This command should be run in the directory where `help_launcher` was built. You might need to install a package that provides the `setcap` utility (e.g., `libcap2-bin` on Debian/Ubuntu based systems). This method is more secure than alternatives like `setuid` root.
+
+#### c. Using `help_launcher` to Run the Java Application
+
+Once `help_launcher` is built and has the `cap_sys_nice+ep` capability set, you can use it to run your Java application with elevated scheduling privileges:
+
+Make sure `help_launcher` is in your current directory (or accessible via your system's PATH).
+
+```bash
+./help_launcher /usr/bin/java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-other-java-args]
+```
+*(Important: Replace `/usr/bin/java` with the actual absolute path to your Java executable if it's different on your system. The `help_launcher` program expects the full path to the command it needs to execute, followed by its arguments.)*
+
+This command will execute the Java application, and `CustomThread` instances within it should now be able to successfully apply `SCHED_FIFO` or `SCHED_RR` policies if `setLinuxSchedParams()` is called.
 
 ## Key Components
 
