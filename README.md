@@ -63,8 +63,9 @@ Follow these steps to build, configure, and use `sched_helper`:
 The `sched_helper.c` program needs to be compiled first. The project includes a `Makefile` for this purpose. In the project's root directory, run:
 
 ```bash
-make
+make sched_helper
 ```
+
 This will produce an executable named `sched_helper` in the same directory.
 
 #### b. Setting Privileges for `sched_helper`
@@ -74,19 +75,19 @@ For `sched_helper` to be able to grant `CAP_SYS_NICE` to the Java process it sta
 The recommended way to achieve this is to set the capability directly on the `sched_helper` executable:
 
 ```bash
-sudo setcap cap_sys_nice+ep sched_helper
+sudo setcap cap_sys_nice+ep ./sched_helper
 ```
+
 This command should be run in the directory where `sched_helper` was built. You might need to install a package that provides the `setcap` utility (e.g., `libcap2-bin` on Debian/Ubuntu based systems). This method is more secure than alternatives like `setuid` root.
 
 #### c. Using `sched_helper` to Run the Java Application
 
 Once `sched_helper` is built and has the `cap_sys_nice+ep` capability set, you can use it to run your Java application with elevated scheduling privileges:
 
-Make sure `sched_helper` is in your current directory (or accessible via your system's PATH).
-
 ```bash
 ./sched_helper /usr/bin/java -jar target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar [any-other-java-args]
 ```
+
 *(Important: Replace `/usr/bin/java` with the actual absolute path to your Java executable if it's different on your system. The `sched_helper` program expects the full path to the command it needs to execute, followed by its arguments.)*
 
 This command will execute the Java application, and `CustomThread` instances within it should now be able to successfully apply `SCHED_FIFO` or `SCHED_RR` policies if `setLinuxSchedParams()` is called.
