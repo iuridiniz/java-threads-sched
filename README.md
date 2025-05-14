@@ -16,7 +16,7 @@
 1.  Clone the repository:
 
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/iuridiniz/java-threads-sched.git
     cd threads-sched
     ```
 
@@ -68,7 +68,7 @@ The project also includes a C helper program `help_launcher.c`. It can be compil
 make
 ```
 
-This will produce an executable named `help_launcher`. Usage of this helper will depend on its specific implementation.
+This will produce an executable named `help_launcher`.
 
 ## Key Components
 
