@@ -29,3 +29,4 @@ Thumbs.db
 
 # Ignore Makefile artifacts
 sched_helper
+sched_helper.setcap

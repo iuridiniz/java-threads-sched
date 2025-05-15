@@ -3,12 +3,14 @@ public class LinuxScheduler {
     public static void main(String[] args) throws InterruptedException {
         // Create a CustomThread
         CustomThread thread1 = new CustomThread(() -> {
-            System.out.println("Thread 1 running in " + Thread.currentThread().getName());
-            try {
-                Thread.sleep(1000); // Simulate work
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Thread 1 interrupted");
+            while (true) {
+                System.out.println("[FIFO] Thread 1 is running... the time is " + System.currentTimeMillis());
+                try {
+                    Thread.sleep(2000); // Simulate work
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.out.println("Thread 1 interrupted");
+                }
             }
         });
 
@@ -21,12 +23,14 @@ public class LinuxScheduler {
 
         // Create another CustomThread
         CustomThread thread2 = new CustomThread(() -> {
-            System.out.println("Thread 2 running in " + Thread.currentThread().getName());
-            try {
-                Thread.sleep(2000); // Simulate work
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Thread 2 interrupted");
+            while (true) {
+                System.out.println("[RR] Thread 2 is running... the time is " + System.currentTimeMillis());
+                try {
+                    Thread.sleep(10000); // Simulate work
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.out.println("Thread 2 interrupted");
+                }
             }
         });
         // Set the scheduling of Thread2
@@ -34,11 +38,33 @@ public class LinuxScheduler {
         System.out.println("Setting Thread-2 to SCHED_RR, priority = " + 50);
         thread2.start();
 
+        // Create a third CustomThread
+        CustomThread thread3 = new CustomThread(() -> {
+            while (true) {
+                System.out.println("[DEADLINE] Thread 3 is running... the time is " + System.currentTimeMillis());
+                try {
+                    Thread.sleep(2); // Simulate work
+                    Thread.yield();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.out.println("Thread 3 interrupted");
+                }
+            }
+        });
+        // Set the scheduling of Thread3
+        // 2ms runtime, 500ms deadline, 500ms period
+        thread3.setLinuxSchedDeadlineParams(2_000_000L, 500_000_000L, 500_000_000L);
+        System.out.println("Setting Thread-3 to SCHED_DEADLINE, runtime = 2ms, deadline = 500ms, period = 500ms");
+        thread3.start();
+
         System.out.println("Main thread PID: " + ProcessHandle.current().pid());
+        System.out.println("Use Ctrl+C to stop the threads.");
+        System.out.println("Use 'ps -elcLf' to check the scheduling policy and priority of the threads.");
 
         // Wait for the threads to finish
         thread1.join();
         thread2.join();
+        thread3.join();
 
         System.out.println("Main thread finished.");
     }
