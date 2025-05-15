@@ -12,6 +12,8 @@ interface LinuxLibC extends Library {
 
     int pthread_setschedparam(LinuxLibC.pthread_t th, int policy, LinuxLibC.sched_param param);
 
+    void sched_yield();
+
     // Add syscall function
     // The signature is: long syscall(long number, ...);
     NativeLong syscall(NativeLong number, Object... args);
@@ -95,6 +97,10 @@ public class CustomThread extends Thread {
     private long schedDeadline;
     private long schedPeriod;
     private boolean isDeadlinePolicy = false;
+
+    static public void yield() {
+        LinuxLibC.INSTANCE.sched_yield();
+    }
 
     public CustomThread(Runnable target) {
         super(target);
