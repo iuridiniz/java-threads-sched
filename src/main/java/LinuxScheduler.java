@@ -34,8 +34,8 @@ public class LinuxScheduler {
         System.out.println("Use Ctrl+C to stop the threads.");
         System.out.println("Use 'ps -elcLf' to check the scheduling policy and priority of the threads.");
         DeadlineThreadPoolExecutor executor = new DeadlineThreadPoolExecutor(
-                8,
-                5_000_000L,
+                Runtime.getRuntime().availableProcessors() / 2,
+                        5_000_000L,
                 20_000_000L,
                 20_000_000L) {
 
