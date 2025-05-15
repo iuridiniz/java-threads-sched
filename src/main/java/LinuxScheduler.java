@@ -2,6 +2,7 @@
 
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,20 +36,22 @@ public class LinuxScheduler {
         System.out.println("Use Ctrl+C to stop the threads.");
         System.out.println("Use 'ps -elcLf' to check the scheduling policy and priority of the threads.");
 
-        int numOfThreads = Runtime.getRuntime().availableProcessors() / 2;
-        // int numOfThreads = 3;
+        long runtime = 1_000_000L;
+        long deadline = 1_000_000L;
+        long period = 5_000_000L;
 
-        DeadlineThreadPoolExecutor executor = new DeadlineThreadPoolExecutor(
-                numOfThreads, 10_000_000L, 10_000_000L, 40_000_000L) {
-
-            ConcurrentHashMap<String, Long> startTimes = new ConcurrentHashMap<String, Long>();
+        // int numOfThreads = Runtime.getRuntime().availableProcessors() / 2;
+        int numOfThreads = 1;
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(numOfThreads,
+                new DeadlineThreadFactory(runtime, deadline, period)) {
+            ConcurrentHashMap<Runnable, Long> startTimes = new ConcurrentHashMap<>();
 
             @Override
             protected void beforeExecute(Thread t, Runnable r) {
                 super.beforeExecute(t, r);
                 long currentTime = System.currentTimeMillis();
 
-                startTimes.put(r.toString(), currentTime);
+                startTimes.put(r, currentTime);
             }
 
             @Override
@@ -61,35 +64,39 @@ public class LinuxScheduler {
                                     Thread.currentThread().getName(), r.toString(), t.getMessage()));
                 }
 
-                Long startTime = startTimes.remove(r.toString());
+                Long startTime = startTimes.remove(r);
                 if (startTime != null) {
                     long duration = currentTime - startTime;
                     System.out.println(
                             String.format("[%d] Thread %s executed task `%s` in %d ms", currentTime,
-                                            Thread.currentThread().getName(),
+                                    Thread.currentThread().getName(),
                                     r.toString(), duration));
                 }
                 super.afterExecute(r, t);
             }
         };
-
-        Thread.sleep(1000); // Sleep for 1 second to allow the executor to start
-        for (int i = 0; i < 500; i++) {
-            executor.execute(new MyRunnable(String.format("task-%s", i+1), 5));
+        for (int i = 0; i < numOfThreads; i++) {
+            executor.execute(new MyRunnable("Task " + (i + 1), 10));
         }
-        // executor.shutdown();
-        // executor.awaitTermination(1, TimeUnit.MINUTES);
+        Thread.sleep(1000);
+        System.out.println("------------------");
+        executor.scheduleAtFixedRate(new MyRunnable("Task 1", 2), 0, 40, TimeUnit.MILLISECONDS);
+        Thread.sleep(1500);
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
 
         // show stats from executor
-        System.out.println("Active count: " + executor.getActiveCount());
-        System.out.println("Pool size: " + executor.getPoolSize());
-        System.out.println("Task count: " + executor.getTaskCount());
-        System.out.println("Completed task count: " + executor.getCompletedTaskCount());
-        System.out.println("Largest pool size: " + executor.getLargestPoolSize());
-        System.out.println("Queue size: " + executor.getQueue().size());
-        System.out.println("Core pool size: " + executor.getCorePoolSize());
-        System.out.println("Maximum pool size: " + executor.getMaximumPoolSize());
-        System.out.println("Keep alive time: " + executor.getKeepAliveTime(TimeUnit.SECONDS) + " seconds");
+        // System.out.println("Active count: " + executor.getActiveCount());
+        // System.out.println("Pool size: " + executor.getPoolSize());
+        // System.out.println("Task count: " + executor.getTaskCount());
+        // System.out.println("Completed task count: " +
+        // executor.getCompletedTaskCount());
+        // System.out.println("Largest pool size: " + executor.getLargestPoolSize());
+        // System.out.println("Queue size: " + executor.getQueue().size());
+        // System.out.println("Core pool size: " + executor.getCorePoolSize());
+        // System.out.println("Maximum pool size: " + executor.getMaximumPoolSize());
+        // System.out.println("Keep alive time: " +
+        // executor.getKeepAliveTime(TimeUnit.SECONDS) + " seconds");
 
         executor.close();
         System.out.println("Main thread finished.");
