@@ -1,6 +1,7 @@
 // Example usage class
 
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,21 +34,20 @@ public class LinuxScheduler {
         System.out.println("Main thread PID: " + ProcessHandle.current().pid());
         System.out.println("Use Ctrl+C to stop the threads.");
         System.out.println("Use 'ps -elcLf' to check the scheduling policy and priority of the threads.");
-        DeadlineThreadPoolExecutor executor = new DeadlineThreadPoolExecutor(
-                Runtime.getRuntime().availableProcessors() / 2,
-                        5_000_000L,
-                20_000_000L,
-                20_000_000L) {
 
-            HashMap<String, Long> startTimes = new HashMap<>();
+        int numOfThreads = Runtime.getRuntime().availableProcessors() / 2;
+        // int numOfThreads = 3;
+
+        DeadlineThreadPoolExecutor executor = new DeadlineThreadPoolExecutor(
+                numOfThreads, 10_000_000L, 10_000_000L, 40_000_000L) {
+
+            ConcurrentHashMap<String, Long> startTimes = new ConcurrentHashMap<String, Long>();
 
             @Override
             protected void beforeExecute(Thread t, Runnable r) {
                 super.beforeExecute(t, r);
                 long currentTime = System.currentTimeMillis();
-                System.out.println(
-                        String.format("Thread %s is about to execute task `%s` at %d", t.getName(), r.toString(),
-                                currentTime));
+
                 startTimes.put(r.toString(), currentTime);
             }
 
@@ -60,26 +60,25 @@ public class LinuxScheduler {
                             String.format("Thread %s encountered an error while executing task `%s`: %s",
                                     Thread.currentThread().getName(), r.toString(), t.getMessage()));
                 }
-                System.out.println(
-                        String.format("Thread %s has finished executing task `%s` at %d",
-                                Thread.currentThread().getName(),
-                                r.toString(), currentTime));
+
                 Long startTime = startTimes.remove(r.toString());
                 if (startTime != null) {
                     long duration = currentTime - startTime;
                     System.out.println(
-                            String.format("Thread %s executed task `%s` in %d ms", Thread.currentThread().getName(),
+                            String.format("[%d] Thread %s executed task `%s` in %d ms", currentTime,
+                                            Thread.currentThread().getName(),
                                     r.toString(), duration));
                 }
                 super.afterExecute(r, t);
             }
         };
 
-        for (int i = 0; i < 20; i++) {
-            executor.execute(new MyRunnable(String.format("task-%s", i), 5));
+        Thread.sleep(1000); // Sleep for 1 second to allow the executor to start
+        for (int i = 0; i < 500; i++) {
+            executor.execute(new MyRunnable(String.format("task-%s", i+1), 5));
         }
-        executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.MINUTES);
+        // executor.shutdown();
+        // executor.awaitTermination(1, TimeUnit.MINUTES);
 
         // show stats from executor
         System.out.println("Active count: " + executor.getActiveCount());
