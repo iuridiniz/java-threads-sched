@@ -54,9 +54,9 @@ public class LinuxScheduler {
             }
         });
         // Set the scheduling of Thread3
-        // 2ms runtime, 500ms deadline, 500ms period
-        thread3.setLinuxSchedDeadlineParams(2_000_000L, 500_000_000L, 500_000_000L);
-        System.out.println("Setting Thread-3 to SCHED_DEADLINE, runtime = 2ms, deadline = 500ms, period = 500ms");
+        // 2.5ms runtime, 500ms deadline, 500ms period
+        thread3.setLinuxSchedDeadlineParams(2_500_000L, 500_000_000L, 500_000_000L);
+        System.out.println("Setting Thread-3 to SCHED_DEADLINE, runtime = 2.5ms, deadline = 500ms, period = 500ms");
         thread3.start();
 
         System.out.println("Main thread PID: " + ProcessHandle.current().pid());

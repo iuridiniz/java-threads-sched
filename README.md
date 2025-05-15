@@ -2,7 +2,13 @@
 
 ## Description
 
-**This project serves as an example demonstration** of how a Java application can interact with Linux process scheduling capabilities. It utilizes JNA (Java Native Access) to call native Linux library functions related to thread and process management. **It is not intended to be a general-purpose library.**
+**This project serves as an example demonstration** of how to interface Java applications with Linux process scheduling mechanisms. **It is not intended to be a general-purpose library.**. It provides a way to set advanced scheduling policies on Java threads, including:
+
+*   SCHED_FIFO (first-in, first-out real-time scheduling)
+*   SCHED_RR (round-robin real-time scheduling)
+*   SCHED_DEADLINE (deadline-based real-time scheduling)
+
+This allows Java applications to run with real-time scheduling priorities on Linux systems, which is useful for time-sensitive applications.
 
 ## Installation Instructions
 
@@ -10,6 +16,8 @@
 
 *   Java Development Kit (JDK) version 21 or higher.
 *   Apache Maven
+*   C compiler for compiling the C helper utility
+*   Linux operating system (the project is designed for Linux and uses Linux-specific features) - Kernel version 3.14 or later is required for `SCHED_DEADLINE` support.
 
 ### Building the Project
 
@@ -32,9 +40,12 @@
 
 The project uses the following main dependencies (managed by Maven):
 
-*   JNA (Java Native Access): For calling native library functions.
-    *   `net.java.dev.jna:jna:5.13.0`
-    *   `net.java.dev.jna:jna-platform:5.13.0`
+*   Java
+    *   JNA (Java Native Access): For calling native library functions.
+        *   `net.java.dev.jna:jna:5.13.0`
+        *   `net.java.dev.jna:jna-platform:5.13.0`
+*   Helper C program
+    * `libcap` for Linux capabilities support
 
 ## Usage Instructions
 
@@ -224,11 +235,19 @@ The Linux kernel's scheduler uses these parameters to:
 *   **Enforce `runtime`**: If a task exceeds its allocated `runtime` within a `period`, it is throttled. This prevents a single misbehaving or unexpectedly long task from monopolizing the CPU and causing other critical tasks to miss their deadlines.
 
 In the `LinuxScheduler.java` example, `thread3` is configured as:
-`thread3.setLinuxSchedDeadlineParams(2_000_000L, 500_000_000L, 500_000_000L);`
+`thread3.setLinuxSchedDeadlineParams(2_500_000L, 500_000_000L, 500_000_000L);`
 This tells the system:
 *   "My task `thread3` needs to run every 500 milliseconds (`period`)."
-*   "In each 500ms window, I need up to 2 milliseconds of CPU time (`runtime`)."
-*   "I must complete this 2ms of work within that 500ms window (`deadline`)."
+*   "In each 500ms window, I need up to 2.5 milliseconds of CPU time (`runtime`)."
+*   "I must complete this 2.5ms of work within that 500ms window (`deadline`)."
+
+## Known Issues
+*   **Linux Kernel**: Ensure you are using a Linux kernel version that supports `SCHED_DEADLINE` (3.14 or later).
+*   **Architecture dependence:** The `SCHED_DEADLINE` syscall number is hardcoded for x86-64
+*   **Thread isolation:** Real-time threads might benefit from CPU affinity settings
+*   **Memory page locking:** For real-time tasks, consider locking memory pages to avoid page faults
+*   **JNA**: JNA may not be the most efficient way to call native functions, especially for performance-critical applications. Consider JNI for more complex interactions or performance-sensitive tasks.
+*   **Systemd capabilities**: As an alternative to using `setcap`, you can set capabilities for a service using systemd by adding `AmbientCapabilities=CAP_SYS_NICE` in the `[Service]` section of a unit file. For more information, see the [systemd.exec(5) man page](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Capabilities).
 
 ## License
 
