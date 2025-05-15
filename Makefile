@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
-JAVA_SRC = src/main/java/LinuxScheduler.java src/main/java/CustomThread.java pom.xml
+JAVA_SRC = pom.xml $(shell find src/ -name "*.java")
 JAR_FILE = target/linux-scheduler-1.0-SNAPSHOT-jar-with-dependencies.jar
 LAUNCHER = sched_helper
 JAVA_BIN = $(shell which java)
