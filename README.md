@@ -1,4 +1,4 @@
-# Linux Scheduler
+# Advanced Linux Scheduler for java threads
 
 ## Description
 
