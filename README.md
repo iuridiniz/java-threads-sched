@@ -241,11 +241,11 @@ This tells the system:
 *   "In each 500ms window, I need up to 2.5 milliseconds of CPU time (`runtime`)."
 *   "I must complete this 2.5ms of work within that 500ms window (`deadline`)."
 
-## Known Issues
+## Known Issues, Potential Pitfalls, Limitations and Performance Considerations
 *   **Linux Kernel**: Ensure you are using a Linux kernel version that supports `SCHED_DEADLINE` (3.14 or later).
-*   **Architecture dependence:** The `SCHED_DEADLINE` syscall number is hardcoded for x86-64
-*   **Thread isolation:** Real-time threads might benefit from CPU affinity settings
-*   **Memory page locking:** For real-time tasks, consider locking memory pages to avoid page faults
+*   **Architecture dependence:** The `SCHED_DEADLINE` syscall number is hardcoded for x86-64.
+*   **Thread isolation:** Real-time threads might benefit from CPU affinity settings. Consider pin critical threads to specific CPU cores using CPU affinity settings. Isolate real-time threads from system interrupts using CPU isolation.
+*   **Memory page locking:** For real-time tasks, consider locking memory pages to avoid page faults.
 *   **JNA**: JNA may not be the most efficient way to call native functions, especially for performance-critical applications. Consider JNI for more complex interactions or performance-sensitive tasks.
 *   **Systemd capabilities**: As an alternative to using `setcap`, you can set capabilities for a service using systemd by adding `AmbientCapabilities=CAP_SYS_NICE` in the `[Service]` section of a unit file. For more information, see the [systemd.exec(5) man page](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Capabilities).
 
@@ -255,10 +255,16 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 ## References
 
-*   Links to relevant documentation, articles, or related projects.
-*   JNA Documentation: [https://github.com/java-native-access/jna](https://github.com/java-native-access/jna)
-*   Linux Scheduler Man Pages:
-    *   `sched_setscheduler(2)`: [https://man7.org/linux/man-pages/man2/sched_setscheduler.2.html](https://man7.org/linux/man-pages/man2/sched_setscheduler.2.html)
-    *   `pthread_setschedparam(3)`: [https://man7.org/linux/man-pages/man3/pthread_setschedparam.3.html](https://man7.org/linux/man-pages/man3/pthread_setschedparam.3.html)
-    *   `sched(7)`: [https://man7.org/linux/man-pages/man7/sched.7.html](https://man7.org/linux/man-pages/man7/sched.7.html) (Overview of Linux scheduling)
+### Official Documentation
+* [Linux Scheduler Documentation](https://www.kernel.org/doc/html/latest/scheduler/sched-deadline.html) - Official Linux kernel documentation on SCHED_DEADLINE
+* [JNA Documentation](https://github.com/java-native-access/jna) - Java Native Access documentation
 
+### Man Pages
+* [sched_setscheduler(2)](https://man7.org/linux/man-pages/man2/sched_setscheduler.2.html) - Linux system call for setting scheduler policies
+* [pthread_setschedparam(3)](https://man7.org/linux/man-pages/man3/pthread_setschedparam.3.html) - POSIX thread scheduling control
+* [sched(7)](https://man7.org/linux/man-pages/man7/sched.7.html) - Overview of Linux scheduling
+* [capabilities(7)](https://man7.org/linux/man-pages/man7/capabilities.7.html) - Linux capability model
+
+### Further Reading
+* [Real-Time Linux Wiki](https://wiki.linuxfoundation.org/realtime/start) - Resources on real-time computing with Linux
+* [SCHED_DEADLINE Design Document](https://www.kernel.org/doc/Documentation/scheduler/sched-deadline.txt) - Technical details on the DEADLINE scheduler
