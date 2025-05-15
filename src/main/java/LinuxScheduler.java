@@ -4,7 +4,8 @@ public class LinuxScheduler {
         // Create a CustomThread
         CustomThread thread1 = new CustomThread(() -> {
             while (true) {
-                System.out.println("[FIFO] Thread 1 is running... the time is " + System.currentTimeMillis());
+                System.out
+                        .println("[FIFO] Thread 1 is running (every 2s)... the time is " + System.currentTimeMillis());
                 try {
                     Thread.sleep(2000); // Simulate work
                 } catch (InterruptedException e) {
@@ -24,7 +25,7 @@ public class LinuxScheduler {
         // Create another CustomThread
         CustomThread thread2 = new CustomThread(() -> {
             while (true) {
-                System.out.println("[RR] Thread 2 is running... the time is " + System.currentTimeMillis());
+                System.out.println("[RR] Thread 2 is running (every 10s)... the time is " + System.currentTimeMillis());
                 try {
                     Thread.sleep(10000); // Simulate work
                 } catch (InterruptedException e) {
@@ -41,7 +42,8 @@ public class LinuxScheduler {
         // Create a third CustomThread
         CustomThread thread3 = new CustomThread(() -> {
             while (true) {
-                System.out.println("[DEADLINE] Thread 3 is running... the time is " + System.currentTimeMillis());
+                System.out.println(
+                        "[DEADLINE] Thread 3 is running (every 500ms)... the time is " + System.currentTimeMillis());
                 try {
                     Thread.sleep(2); // Simulate work
                     Thread.yield();
