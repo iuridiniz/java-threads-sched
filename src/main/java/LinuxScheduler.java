@@ -48,8 +48,10 @@ public class LinuxScheduler {
             .parseLong(System.getenv().getOrDefault("DEADLINE_PERIOD", String.valueOf(1_000_000L)));
     static final int NUMBER_OF_THREADS = Integer.parseInt(System.getenv().getOrDefault("NUMBER_OF_THREADS",
             String.valueOf(Runtime.getRuntime().availableProcessors() - 1)));
-
     static final String THREAD_FACTORY = System.getenv().getOrDefault("THREAD_FACTORY", "deadline");
+
+    static final int SCHED_PRIORITY = Integer
+            .parseInt(System.getenv().getOrDefault("SCHED_PRIORITY", "1"));
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("Main thread PID: " + ProcessHandle.current().pid());
@@ -58,11 +60,26 @@ public class LinuxScheduler {
 
         ThreadFactory threadFactory;
 
+        int schedPriority = SCHED_PRIORITY;
+        if (schedPriority < 1 || schedPriority > 99) {
+            System.out.println("Invalid scheduling priority. Using default value of 1.");
+            schedPriority = 1;
+        }
+
         if (THREAD_FACTORY.equals("deadline")) {
             System.out.println("Using DeadlineThreadFactory (runtime=" + DEADLINE_RUNTIME +
                     ", deadline=" + DEADLINE_DEADLINE + ", period=" + DEADLINE_PERIOD + ")");
             threadFactory = new DeadlineThreadFactory(DEADLINE_RUNTIME,
                     DEADLINE_DEADLINE, DEADLINE_PERIOD);
+        } else if (THREAD_FACTORY.equals("rr")) {
+            System.out
+                    .println("Using LinuxNativeThreadFactory (scheduling policy=RR, priority=" + schedPriority + ")");
+            threadFactory = new LinuxNativeThreadFactory(
+                    LinuxNativeThreadFactory.SchedulingPolicy.ROUND_ROBIN, schedPriority);
+        } else if (THREAD_FACTORY.equals("fifo")) {
+            System.out.println("Using LinuxNativeThreadFactory (scheduling policy=FIFO)");
+            threadFactory = new LinuxNativeThreadFactory(
+                    LinuxNativeThreadFactory.SchedulingPolicy.FIFO, schedPriority);
         } else {
             System.out.println("Using default ThreadFactory");
             threadFactory = Executors.defaultThreadFactory();
@@ -122,13 +139,17 @@ public class LinuxScheduler {
         System.out.println("------------------");
         Thread.sleep(1000);
         for (int i = 0; i < NUMBER_OF_PERIODIC_TASKS; i++) {
-            executor.scheduleAtFixedRate(new MyRunnable("Task " + (i + 1), PERIODIC_TASK_WORK_TIME), 0,
-                    PERIODIC_TASK_PERIOD,
+            executor.scheduleAtFixedRate(new MyRunnable("Task(" + (i + 1) + ")", PERIODIC_TASK_WORK_TIME), 0,
+                            PERIODIC_TASK_PERIOD,
                     TimeUnit.MILLISECONDS);
         }
 
         Thread.sleep(PROGRAM_RUNTIME);
 
+        System.out.println("Stopping all tasks...");
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+        executor.close();
         // show stats from executor
         System.out.println("Active count: " + executor.getActiveCount());
         System.out.println("Pool size: " + executor.getPoolSize());
@@ -141,11 +162,6 @@ public class LinuxScheduler {
         System.out.println("Maximum pool size: " + executor.getMaximumPoolSize());
         System.out.println("Keep alive time: " +
                 executor.getKeepAliveTime(TimeUnit.SECONDS) + " seconds");
-
-        System.out.println("Stopping all tasks...");
-        executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.MINUTES);
-        executor.close();
 
         System.out.println("Main thread finished.");
     }
