@@ -38,13 +38,14 @@ public class LinuxScheduler {
 
         long runtime = 1_000_000L;
         long deadline = 1_000_000L;
-        long period = 5_000_000L;
+        long period = 1_000_000L;
 
-        // int numOfThreads = Runtime.getRuntime().availableProcessors() / 2;
-        int numOfThreads = 1;
+        // int numOfThreads = Runtime.getRuntime().availableProcessors();
+        int numOfThreads = 4;
         ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(numOfThreads,
                 new DeadlineThreadFactory(runtime, deadline, period)) {
             ConcurrentHashMap<Runnable, Long> startTimes = new ConcurrentHashMap<>();
+            ConcurrentHashMap<Runnable, Long> endTimes = new ConcurrentHashMap<>();
 
             @Override
             protected void beforeExecute(Thread t, Runnable r) {
@@ -65,23 +66,30 @@ public class LinuxScheduler {
                 }
 
                 Long startTime = startTimes.remove(r);
+                long lastEndTime = endTimes.getOrDefault(r, currentTime);
                 if (startTime != null) {
                     long duration = currentTime - startTime;
+                    long period = currentTime - lastEndTime;
                     System.out.println(
-                            String.format("[%d] Thread %s executed task `%s` in %d ms", currentTime,
-                                    Thread.currentThread().getName(),
-                                    r.toString(), duration));
+                            String.format("[%d] Thread %s executed task `%s` in %d ms [p=%d]", currentTime,
+                                            Thread.currentThread().getName(),
+                                    r.toString(), duration, period));
                 }
+                endTimes.put(r, currentTime);
                 super.afterExecute(r, t);
             }
         };
         for (int i = 0; i < numOfThreads; i++) {
-            executor.execute(new MyRunnable("Task " + (i + 1), 10));
+            executor.execute(new MyRunnable("[Task] " + (i + 1), 10));
         }
         Thread.sleep(1000);
         System.out.println("------------------");
-        executor.scheduleAtFixedRate(new MyRunnable("Task 1", 2), 0, 40, TimeUnit.MILLISECONDS);
-        Thread.sleep(1500);
+        for (int i = 0; i < 40; i++) {
+            executor.scheduleAtFixedRate(new MyRunnable("Task " + (i + 1), 2), 0, 40, TimeUnit.MILLISECONDS);
+        }
+
+        // Thread.sleep(3_600_000);
+        Thread.sleep(1_000);
         executor.shutdown();
         executor.awaitTermination(1, TimeUnit.MINUTES);
 
